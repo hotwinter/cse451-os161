@@ -59,7 +59,7 @@
 #define NTHREADS  8
 
 static
-void
+int
 kmallocthread(void *sm, unsigned long num)
 {
 	struct semaphore *sem = sm;
@@ -75,10 +75,10 @@ kmallocthread(void *sm, unsigned long num)
 				kprintf("thread %lu: kmalloc returned NULL\n",
 					num);
 				V(sem);
-				return;
+				return -1;
 			}
 			kprintf("kmalloc returned null; test failed.\n");
-			return;
+			return -1;
 		}
 		if (oldptr2) {
 			kfree(oldptr2);
@@ -95,6 +95,7 @@ kmallocthread(void *sm, unsigned long num)
 	if (sem) {
 		V(sem);
 	}
+        return 0;
 }
 
 int
@@ -127,7 +128,7 @@ kmallocstress(int nargs, char **args)
 	kprintf("Starting kmalloc stress test...\n");
 
 	for (i=0; i<NTHREADS; i++) {
-		result = thread_fork("kmallocstress", NULL,
+		result = thread_fork("kmallocstress", NULL, NULL,
 				     kmallocthread, sem, i);
 		if (result) {
 			panic("kmallocstress: thread_fork failed: %s\n",
@@ -296,7 +297,7 @@ kmalloctest3(int nargs, char **args)
 // km4
 
 static
-void
+int
 kmalloctest4thread(void *sm, unsigned long num)
 {
 #define NUM_KM4_SIZES 5
@@ -335,6 +336,7 @@ kmalloctest4thread(void *sm, unsigned long num)
 	}
 
 	V(sem);
+        return 0;
 }
 
 int
@@ -362,7 +364,7 @@ kmalloctest4(int nargs, char **args)
 	nthreads = (3*NTHREADS)/4;
 
 	for (i=0; i<nthreads; i++) {
-		result = thread_fork("kmalloctest4", NULL,
+		result = thread_fork("kmalloctest4", NULL, NULL,
 				     kmalloctest4thread, sem, i);
 		if (result) {
 			panic("kmallocstress: thread_fork failed: %s\n",

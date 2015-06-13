@@ -135,20 +135,28 @@ void thread_shutdown(void);
  * will belong to the process "proc", or to the current thread's
  * process if "proc" is null. The "data" arguments (one pointer, one
  * number) are passed to the function. The current thread is used as a
- * prototype for creating the new one. Returns an error code. The
- * thread structure for the new thread is not returned; it is not in
- * general safe to refer to it as the new thread may exit and
- * disappear at any time without notice.
+ * prototype for creating the new one. Returns an error code. If
+ * thread_out is not NULL, the thread is joinable and the thread
+ * structure for the new thread is returned through thread_out as an
+ * ouput parameter. If thread_out is NULL, the thread is not joinable
+ * and may exit and disappear at any time without notice. 
  */
-int thread_fork(const char *name, struct proc *proc,
-                void (*func)(void *, unsigned long),
+int thread_fork(const char *name, struct thread **thread_out, 
+                struct proc *proc, int (*func)(void *, unsigned long),
                 void *data1, unsigned long data2);
 
 /*
  * Cause the current thread to exit.
  * Interrupts need not be disabled.
  */
-__DEAD void thread_exit(void);
+__DEAD void thread_exit(int ret);
+
+/*
+ * Wait for the specified thread to finish if it hasn't already
+ * completed; pass back the value it returned through ret_out.
+ * Returns an error code.
+ */
+int thread_join(struct thread *thread, int *ret_out);
 
 /*
  * Cause the current thread to yield to the next runnable thread, but

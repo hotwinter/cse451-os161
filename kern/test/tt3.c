@@ -37,9 +37,14 @@
 #include <synch.h>
 #include <test.h>
 
-/* dimension of matrices (cannot be too large or will overflow stack) */
+#include "opt-synchprobs.h"
 
-#define DIM 70
+/* dimension of matrices (cannot be too large or will overflow stack) */
+#if OPT_SYNCHPROBS
+#define DIM 10
+#else
+ #define DIM 70
+#endif
 
 /* number of iterations for sleepalot threads */
 #define SLEEPALOT_PRINTS      20	/* number of printouts */
@@ -78,7 +83,7 @@ setup(void)
 }
 
 static
-void
+int
 sleepalot_thread(void *junk, unsigned long num)
 {
 	int i, j;
@@ -101,10 +106,11 @@ sleepalot_thread(void *junk, unsigned long num)
 		kprintf("[%lu]", num);
 	}
 	V(donesem);
+        return 0;
 }
 
 static
-void
+int
 waker_thread(void *junk1, unsigned long junk2)
 {
 	int i, done;
@@ -136,6 +142,7 @@ waker_thread(void *junk1, unsigned long junk2)
 		}
 	}
 	V(donesem);
+        return 0;
 }
 
 static
@@ -147,19 +154,19 @@ make_sleepalots(int howmany)
 
 	for (i=0; i<howmany; i++) {
 		snprintf(name, sizeof(name), "sleepalot%d", i);
-		result = thread_fork(name, NULL, sleepalot_thread, NULL, i);
+		result = thread_fork(name, NULL, NULL, sleepalot_thread, NULL, i);
 		if (result) {
 			panic("thread_fork failed: %s\n", strerror(result));
 		}
 	}
-	result = thread_fork("waker", NULL, waker_thread, NULL, 0);
+	result = thread_fork("waker", NULL, NULL, waker_thread, NULL, 0);
 	if (result) {
 		panic("thread_fork failed: %s\n", strerror(result));
 	}
 }
 
 static
-void
+int
 compute_thread(void *junk1, unsigned long num)
 {
 	struct matrix {
@@ -213,6 +220,7 @@ compute_thread(void *junk1, unsigned long num)
 	kfree(m3);
 
 	V(donesem);
+        return 0;
 }
 
 static
@@ -224,7 +232,7 @@ make_computes(int howmany)
 
 	for (i=0; i<howmany; i++) {
 		snprintf(name, sizeof(name), "compute%d", i);
-		result = thread_fork(name, NULL, compute_thread, NULL, i);
+		result = thread_fork(name, NULL, NULL, compute_thread, NULL, i);
 		if (result) {
 			panic("thread_fork failed: %s\n", strerror(result));
 		}

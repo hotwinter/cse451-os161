@@ -72,7 +72,7 @@ int netqueuetest(int argc, char ** argv)
 {
   int i;
   int ret;
-  int err;
+  //int err;
   struct thread *senders[NTHREADS];
   struct thread *recvr;
 
@@ -89,9 +89,9 @@ int netqueuetest(int argc, char ** argv)
 
   /* wait for everyone to finish */
   for(i = 0; i < NTHREADS; i++) {
-    err = thread_join(senders[i], &ret);
+    thread_join(senders[i], &ret);
   }
-  err = thread_join(recvr, &ret);
+  thread_join(recvr, &ret);
   kprintf("Main thread done.\n");
   return ret;
 }

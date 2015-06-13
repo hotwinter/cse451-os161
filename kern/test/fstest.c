@@ -300,7 +300,7 @@ dofstest(const char *filesys)
 ////////////////////////////////////////////////////////////
 
 static
-void
+int
 readstress_thread(void *fs, unsigned long num)
 {
 	const char *filesys = fs;
@@ -308,6 +308,7 @@ readstress_thread(void *fs, unsigned long num)
 		kprintf("*** Thread %lu: failed\n", num);
 	}
 	V(threadsem);
+        return 0;
 }
 
 static
@@ -326,7 +327,7 @@ doreadstress(const char *filesys)
 	}
 
 	for (i=0; i<NTHREADS; i++) {
-		err = thread_fork("readstress", NULL,
+		err = thread_fork("readstress", NULL, NULL,
 				  readstress_thread, (char *)filesys, i);
 		if (err) {
 			panic("readstress: thread_fork failed: %s\n",
@@ -349,7 +350,7 @@ doreadstress(const char *filesys)
 ////////////////////////////////////////////////////////////
 
 static
-void
+int
 writestress_thread(void *fs, unsigned long num)
 {
 	const char *filesys = fs;
@@ -359,13 +360,13 @@ writestress_thread(void *fs, unsigned long num)
 	if (fstest_write(filesys, numstr, 1, 0)) {
 		kprintf("*** Thread %lu: failed\n", num);
 		V(threadsem);
-		return;
+		return -1;
 	}
 
 	if (fstest_read(filesys, numstr)) {
 		kprintf("*** Thread %lu: failed\n", num);
 		V(threadsem);
-		return;
+		return -1;
 	}
 
 	if (fstest_remove(filesys, numstr)) {
@@ -375,6 +376,7 @@ writestress_thread(void *fs, unsigned long num)
 	kprintf("*** Thread %lu: done\n", num);
 
 	V(threadsem);
+        return 0;
 }
 
 static
@@ -388,7 +390,7 @@ dowritestress(const char *filesys)
 	kprintf("*** Starting fs write stress test on %s:\n", filesys);
 
 	for (i=0; i<NTHREADS; i++) {
-		err = thread_fork("writestress", NULL,
+		err = thread_fork("writestress", NULL, NULL,
 				  writestress_thread, (char *)filesys, i);
 		if (err) {
 			panic("thread_fork failed %s\n", strerror(err));
@@ -405,7 +407,7 @@ dowritestress(const char *filesys)
 ////////////////////////////////////////////////////////////
 
 static
-void
+int
 writestress2_thread(void *fs, unsigned long num)
 {
 	const char *filesys = fs;
@@ -413,10 +415,11 @@ writestress2_thread(void *fs, unsigned long num)
 	if (fstest_write(filesys, "", NTHREADS, num)) {
 		kprintf("*** Thread %lu: failed\n", num);
 		V(threadsem);
-		return;
+		return -1;
 	}
 
 	V(threadsem);
+        return 0;
 }
 
 static
@@ -442,7 +445,7 @@ dowritestress2(const char *filesys)
 	vfs_close(vn);
 
 	for (i=0; i<NTHREADS; i++) {
-		err = thread_fork("writestress2", NULL,
+		err = thread_fork("writestress2", NULL, NULL,
 				  writestress2_thread, (char *)filesys, i);
 		if (err) {
 			panic("writestress2: thread_fork failed: %s\n",
@@ -470,7 +473,7 @@ dowritestress2(const char *filesys)
 ////////////////////////////////////////////////////////////
 
 static
-void
+int
 longstress_thread(void *fs, unsigned long num)
 {
 	const char *filesys = fs;
@@ -484,24 +487,25 @@ longstress_thread(void *fs, unsigned long num)
 		if (fstest_write(filesys, numstr, 1, 0)) {
 			kprintf("*** Thread %lu: file %d: failed\n", num, i);
 			V(threadsem);
-			return;
+			return -1;
 		}
 
 		if (fstest_read(filesys, numstr)) {
 			kprintf("*** Thread %lu: file %d: failed\n", num, i);
 			V(threadsem);
-			return;
+			return -1;
 		}
 
 		if (fstest_remove(filesys, numstr)) {
 			kprintf("*** Thread %lu: file %d: failed\n", num, i);
 			V(threadsem);
-			return;
+			return -1;
 		}
 
 	}
 
 	V(threadsem);
+        return 0;
 }
 
 static
@@ -515,7 +519,7 @@ dolongstress(const char *filesys)
 	kprintf("*** Starting fs long stress test on %s:\n", filesys);
 
 	for (i=0; i<NTHREADS; i++) {
-		err = thread_fork("longstress", NULL,
+		err = thread_fork("longstress", NULL, NULL,
 				  longstress_thread, (char *)filesys, i);
 		if (err) {
 			panic("longstress: thread_fork failed %s\n",
@@ -533,7 +537,7 @@ dolongstress(const char *filesys)
 ////////////////////////////////////////////////////////////
 
 static
-void
+int
 createstress_thread(void *fs, unsigned long num)
 {
 	const char *filesys = fs;
@@ -644,6 +648,7 @@ createstress_thread(void *fs, unsigned long num)
 	kprintf("Thread %lu: %u files removed\n", num, numremoved);
 
 	V(threadsem);
+        return 0;
 }
 
 static
@@ -657,7 +662,7 @@ docreatestress(const char *filesys)
 	kprintf("*** Starting fs create stress test on %s:\n", filesys);
 
 	for (i=0; i<NTHREADS; i++) {
-		err = thread_fork("createstress", NULL,
+		err = thread_fork("createstress", NULL, NULL,
 				  createstress_thread, (char *)filesys, i);
 		if (err) {
 			panic("createstress: thread_fork failed %s\n",

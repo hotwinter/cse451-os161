@@ -68,7 +68,7 @@
  * it gets by passing it to vfs_open().
  */
 static
-void
+int
 cmd_progthread(void *ptr, unsigned long nargs)
 {
 	char **args = ptr;
@@ -90,10 +90,11 @@ cmd_progthread(void *ptr, unsigned long nargs)
 	if (result) {
 		kprintf("Running program %s failed: %s\n", args[0],
 			strerror(result));
-		return;
+		return -1;
 	}
 
 	/* NOTREACHED: runprogram only returns on error. */
+        return 0;
 }
 
 /*
@@ -115,6 +116,10 @@ common_prog(int nargs, char **args)
 	struct proc *proc;
 	int result;
 
+#if OPT_SYNCHPROBS
+	kprintf("Warning: this probably won't work with a "
+			"synchronization-problems kernel.\n");
+#endif
 	/* Create a process for the new program to run in. */
 	proc = proc_create_runprogram(args[0] /* name */);
 	if (proc == NULL) {
@@ -122,6 +127,7 @@ common_prog(int nargs, char **args)
 	}
 
 	result = thread_fork(args[0] /* thread name */,
+                        NULL /* not joinable */,
 			proc /* new process */,
 			cmd_progthread /* thread function */,
 			args /* thread arg */, nargs /* thread arg */);
@@ -263,7 +269,7 @@ cmd_quit(int nargs, char **args)
 
 	vfs_sync();
 	sys_reboot(RB_POWEROFF);
-	thread_exit();
+	thread_exit(0);
 	return 0;
 }
 
@@ -471,6 +477,13 @@ static const char *testmenu[] = {
 #if OPT_NET
 	"[net] Network test                  ",
 #endif
+#if OPT_SYNCHPROBS
+	"[lst] List test             (1)     ",
+	"[htt] Hashtable test        (1)     ",
+	"[ht]  Heap test             (1)     ",
+	"[qt]  Queue test            (1)     ",
+	"[nqu] Network queue test    (1)     ",
+#endif
 	"[sy1] Semaphore test                ",
 	"[sy2] Lock test             (1)     ",
 	"[sy3] CV test               (1)     ",
@@ -558,6 +571,10 @@ static struct {
 	/* base system tests */
 	{ "at",		arraytest },
 	{ "bt",		bitmaptest },
+	{ "lst",	listtest },
+	{ "htt",	hashtabletest },
+	{ "ht",		heaptest },
+	{ "qt",		queuetest },
 	{ "tlt",	threadlisttest },
 	{ "km1",	kmalloctest },
 	{ "km2",	kmallocstress },
@@ -565,6 +582,9 @@ static struct {
 	{ "km4",	kmalloctest4 },
 #if OPT_NET
 	{ "net",	nettest },
+#endif
+#if OPT_SYNCHPROBS
+	{ "nqu",	netqueuetest },
 #endif
 	{ "tt1",	threadtest },
 	{ "tt2",	threadtest2 },

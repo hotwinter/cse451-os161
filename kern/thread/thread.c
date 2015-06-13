@@ -51,6 +51,7 @@
 #include <mainbus.h>
 #include <vnode.h>
 
+#include "opt-synchprobs.h"
 
 /* Magic number used as a guard value on kernel thread stacks. */
 #define THREAD_STACK_MAGIC 0xbaadf00d
@@ -415,7 +416,7 @@ cpu_hatch(unsigned software_number)
 	kprintf("cpu%u: %s\n", software_number, buf);
 
 	V(cpu_startup_sem);
-	thread_exit();
+	thread_exit(0);
 }
 
 /*
@@ -491,12 +492,14 @@ thread_make_runnable(struct thread *target, bool already_have_lock)
  */
 int
 thread_fork(const char *name,
+            struct thread **thread_out,
 	    struct proc *proc,
-	    void (*entrypoint)(void *data1, unsigned long data2),
+	    int (*entrypoint)(void *data1, unsigned long data2),
 	    void *data1, unsigned long data2)
 {
 	struct thread *newthread;
 	int result;
+        (void)thread_out; // unused until ASST1 implemented
 
 	newthread = thread_create(name);
 	if (newthread == NULL) {
@@ -734,7 +737,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc, struct spinlock *lk)
  * tail of thread_switch.
  */
 void
-thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
+thread_startup(int (*entrypoint)(void *data1, unsigned long data2),
 	       void *data1, unsigned long data2)
 {
 	struct thread *cur;
@@ -757,11 +760,21 @@ thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
 	/* Enable interrupts. */
 	spl0();
 
+#if OPT_SYNCHPROBS
+	/* Yield a random number of times to get a good mix of threads. */
+	{
+		int i, n;
+		n = random()%451 + random()%451;
+		for (i=0; i<n; i++) {
+			thread_yield();
+		}
+	}
+#endif
 	/* Call the function. */
 	entrypoint(data1, data2);
 
 	/* Done. */
-	thread_exit();
+	thread_exit(0);
 }
 
 /*
@@ -774,9 +787,11 @@ thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
  * Does not return.
  */
 void
-thread_exit(void)
+thread_exit(int ret)
 {
 	struct thread *cur;
+
+        (void)ret; // unused until ASST1 implemented
 
 	cur = curthread;
 
@@ -796,6 +811,14 @@ thread_exit(void)
         splhigh();
 	thread_switch(S_ZOMBIE, NULL, NULL);
 	panic("braaaaaaaiiiiiiiiiiinssssss\n");
+}
+
+int
+thread_join(struct thread *thread, int *ret_out)
+{
+	(void)thread;  // unused until ASST1 implemented
+	(void)ret_out;  // unused until ASST1 implemented
+	return 0;
 }
 
 /*

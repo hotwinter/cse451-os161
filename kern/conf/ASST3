@@ -25,6 +25,7 @@ device rtclock0 at ltimer*	# Abstract realtime clock
 device random0 at lrandom*	# Abstract randomness device
 
 #options net			# Network stack (not supported)
+options semfs                   # Semaphores for userland
 
 options sfs			# Always use the file system
 #options netfs			# You might write this as a project.
